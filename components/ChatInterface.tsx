@@ -31,6 +31,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, setMessages, on
     const [hint, setHint] = useState<{text: string, translation: string} | null>(null);
     const [isTranslating, setIsTranslating] = useState<string | null>(null);
     const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([]);
+    const [isBlindMode, setIsBlindMode] = useState(false); // Blind Mode State
 
     useEffect(() => {
         if (scrollRef.current) {
@@ -209,7 +210,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, setMessages, on
              id: aiMsgId,
              sender: Sender.AI,
              text: aiText,
-             isBlurred: false,
+             isBlurred: isBlindMode, // Apply Blind Mode state
              showTranslation: false
         }]);
 
@@ -243,6 +244,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, setMessages, on
             id: newMsgId,
             sender: Sender.AI,
             text: topicText,
+            isBlurred: isBlindMode, // Apply Blind Mode state
             showTranslation: false
         }]);
 
@@ -275,6 +277,17 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, setMessages, on
     const toggleFavorite = (id: string) => {
         setMessages(prev => prev.map(msg => 
             msg.id === id ? { ...msg, isFavorited: !msg.isFavorited } : msg
+        ));
+    };
+
+    // Global Blind Mode Toggle
+    const toggleBlindMode = () => {
+        const newMode = !isBlindMode;
+        setIsBlindMode(newMode);
+        
+        // Apply to all existing AI messages
+        setMessages(prev => prev.map(msg => 
+            msg.sender === Sender.AI ? { ...msg, isBlurred: newMode } : msg
         ));
     };
 
@@ -419,17 +432,23 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, setMessages, on
 
             {/* Bottom Controls */}
             <div className="bg-white p-4 pb-8 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-20">
-                <div className="flex justify-between mb-6 px-2 relative z-30">
-                    <button onClick={handleHint} className="flex items-center gap-1 bg-white border shadow-sm px-3 py-1.5 rounded-lg text-xs font-bold text-gray-700 active:scale-95 active:bg-gray-100 transition-all duration-200">
+                <div className="flex justify-between mb-6 px-1 relative z-30 gap-2">
+                    <button onClick={handleHint} className="flex-1 flex items-center justify-center gap-1 bg-white border shadow-sm px-2 py-2 rounded-lg text-xs font-bold text-gray-700 active:scale-95 active:bg-gray-100 transition-all duration-200">
                         <IconBulb className="w-3.5 h-3.5" /> 提示
                     </button>
-                    <button onClick={handleChangeTopic} className="flex items-center gap-1 bg-white border shadow-sm px-3 py-1.5 rounded-lg text-xs font-bold text-gray-700 active:scale-95 active:bg-gray-100 transition-all duration-200">
+                    <button onClick={handleChangeTopic} className="flex-1 flex items-center justify-center gap-1 bg-white border shadow-sm px-2 py-2 rounded-lg text-xs font-bold text-gray-700 active:scale-95 active:bg-gray-100 transition-all duration-200">
                         <IconRefresh className="w-3.5 h-3.5" /> 换话题
                     </button>
-                    <button onClick={handleMute} className="flex items-center gap-1 bg-white border shadow-sm px-3 py-1.5 rounded-lg text-xs font-bold text-gray-700 active:scale-95 active:bg-gray-100 transition-all duration-200">
+                    <button onClick={handleMute} className="flex-1 flex items-center justify-center gap-1 bg-white border shadow-sm px-2 py-2 rounded-lg text-xs font-bold text-gray-700 active:scale-95 active:bg-gray-100 transition-all duration-200">
                         <IconVolume className="w-3.5 h-3.5" /> 静音
                     </button>
-                    <button onClick={onOpenSettings} className="flex items-center gap-1 bg-white border shadow-sm px-3 py-1.5 rounded-lg text-xs font-bold text-gray-700 active:scale-95 active:bg-gray-100 transition-all duration-200">
+                    <button 
+                        onClick={toggleBlindMode}
+                        className={`flex-1 flex items-center justify-center gap-1 border shadow-sm px-2 py-2 rounded-lg text-xs font-bold active:scale-95 transition-all duration-200 ${isBlindMode ? 'bg-orange-50 border-orange-200 text-orange-600' : 'bg-white border-gray-200 text-gray-700 active:bg-gray-100'}`}
+                    >
+                        {isBlindMode ? <IconEyeOff className="w-3.5 h-3.5" /> : <IconEye className="w-3.5 h-3.5" />} 隐藏
+                    </button>
+                    <button onClick={onOpenSettings} className="flex-1 flex items-center justify-center gap-1 bg-white border shadow-sm px-2 py-2 rounded-lg text-xs font-bold text-gray-700 active:scale-95 active:bg-gray-100 transition-all duration-200">
                         <IconSettings className="w-3.5 h-3.5" /> 设置
                     </button>
                 </div>
