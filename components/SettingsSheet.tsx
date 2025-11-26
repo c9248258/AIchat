@@ -10,6 +10,7 @@ interface SettingsSheetProps {
 
 const SettingsSheet: React.FC<SettingsSheetProps> = ({ settings, updateSettings, onClose }) => {
   
+  // 固定显示的语音库（美式库）
   const usVoices = [
     { id: 'zhilin', name: '志林姐姐' },
     { id: 'gentle', name: '温柔甜妹' },
@@ -66,11 +67,11 @@ const SettingsSheet: React.FC<SettingsSheetProps> = ({ settings, updateSettings,
             </div>
         </div>
 
-        {/* Voice Timbre */}
+        {/* Voice Timbre - Always show US Voices list */}
         <div className="bg-white rounded-2xl p-4">
             <h3 className="font-bold text-lg text-gray-900 mb-4">发音音色</h3>
             
-            <div className="grid grid-cols-4 gap-3 mb-4">
+            <div className="grid grid-cols-4 gap-3 mb-1">
                 {usVoices.map(voice => (
                     <button 
                         key={voice.id}
@@ -81,7 +82,7 @@ const SettingsSheet: React.FC<SettingsSheetProps> = ({ settings, updateSettings,
                     </button>
                 ))}
             </div>
-            <div className="flex justify-center text-gray-400 text-xs items-center gap-1 cursor-pointer hover:text-gray-600">
+            <div className="flex justify-center text-gray-400 text-xs items-center gap-1 cursor-pointer hover:text-gray-600 mt-3">
                 查看更多 <IconArrowRight className="w-3 h-3 rotate-90" />
             </div>
         </div>

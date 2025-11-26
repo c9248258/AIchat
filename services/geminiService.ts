@@ -5,8 +5,14 @@ const ai = apiKey ? new GoogleGenAI({ apiKey }) : null;
 
 export const generateAIResponse = async (history: string[], userMessage: string): Promise<string> => {
   if (!ai) {
-    // Fallback if no API key
-    return "I am a simulated response because no API Key was provided. Please check your configuration.";
+    // 模拟数据：根据用户输入稍微变化回答
+    const responses = [
+        "That's a really interesting perspective! Tell me more about it.",
+        "I never thought about it that way. Have you always felt like that?",
+        "Sounds great! By the way, how often do you practice English?",
+        "I see. That reminds me of a movie I watched recently."
+    ];
+    return responses[Math.floor(Math.random() * responses.length)];
   }
 
   try {
@@ -14,7 +20,7 @@ export const generateAIResponse = async (history: string[], userMessage: string)
     const response = await ai.models.generateContent({
       model,
       contents: [
-        { role: 'user', parts: [{ text: `You are a helpful English language partner. Keep responses conversational and concise. Previous conversation: ${JSON.stringify(history)}. User says: ${userMessage}` }] }
+        { role: 'user', parts: [{ text: `You are a helpful English language partner. Keep responses conversational, natural and concise (around 20-40 words). Previous conversation: ${JSON.stringify(history)}. User says: ${userMessage}` }] }
       ]
     });
     return response.text || "Sorry, I couldn't think of a response.";
@@ -25,7 +31,7 @@ export const generateAIResponse = async (history: string[], userMessage: string)
 };
 
 export const getTranslation = async (text: string): Promise<string> => {
-  if (!ai) return "模拟翻译结果"; // Simplified fallback
+  if (!ai) return "这是模拟的中文翻译内容，用于演示界面布局。";
 
   try {
     const response = await ai.models.generateContent({
@@ -35,12 +41,12 @@ export const getTranslation = async (text: string): Promise<string> => {
     return response.text?.trim() || "翻译失败";
   } catch (e) {
     console.error(e);
-    return "翻译不可用";
+    return "翻译服务暂时不可用";
   }
 };
 
 export const getHint = async (context: string, difficulty: string = 'Intermediate'): Promise<{ text: string; translation: string }> => {
-  if (!ai) return { text: "That sounds interesting! Tell me more.", translation: "听起来很有趣！再多和我说说。" };
+  if (!ai) return { text: "That sounds fascinating! I'd love to hear more details about it.", translation: "听起来很迷人！我很想听听更多细节。" };
   
   try {
     const response = await ai.models.generateContent({
@@ -63,7 +69,14 @@ export const getHint = async (context: string, difficulty: string = 'Intermediat
 };
 
 export const getNewTopicStart = async (difficulty: string = 'Intermediate'): Promise<string> => {
-    if (!ai) return "Let's talk about travel. Where is the best place you have ever been?";
+    if (!ai) {
+        const topics = [
+            "Let's talk about food. What is the most delicious meal you've ever had?",
+            "How about movies? Have you seen any good films lately?",
+            "Let's switch to travel. If you could go anywhere right now, where would you go?"
+        ];
+        return topics[Math.floor(Math.random() * topics.length)];
+    }
     
     try {
         const response = await ai.models.generateContent({

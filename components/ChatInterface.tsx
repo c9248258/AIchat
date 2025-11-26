@@ -26,12 +26,12 @@ interface ChatInterfaceProps {
 const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, setMessages, onOpenSettings, onMessageClick, settings }) => {
     const scrollRef = useRef<HTMLDivElement>(null);
     const [isRecording, setIsRecording] = useState(false);
-    const [inputText, setInputText] = useState(""); // For debugging/web fallback
+    const [inputText, setInputText] = useState("");
     const [playingId, setPlayingId] = useState<string | null>(null);
     const [hint, setHint] = useState<{text: string, translation: string} | null>(null);
     const [isTranslating, setIsTranslating] = useState<string | null>(null);
     const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([]);
-    const [isBlindMode, setIsBlindMode] = useState(false); // Blind Mode State
+    const [isBlindMode, setIsBlindMode] = useState(false);
 
     useEffect(() => {
         if (scrollRef.current) {
@@ -39,7 +39,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, setMessages, on
         }
     }, [messages, hint]);
 
-    // Ensure voices are loaded
+    // Load voices
     useEffect(() => {
         const loadVoices = () => {
             const voices = window.speechSynthesis.getVoices();
@@ -47,24 +47,22 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, setMessages, on
                 setAvailableVoices(voices);
             }
         };
-        
         loadVoices();
         window.speechSynthesis.onvoiceschanged = loadVoices;
         return () => { window.speechSynthesis.onvoiceschanged = null; };
     }, []);
 
-    // --- Audio Logic ---
+    // --- Advanced Audio Logic ---
     const getBestVoice = (lang: 'en-US' | 'en-GB', genderPreference: 'male' | 'female' = 'female') => {
         if (availableVoices.length === 0) return null;
 
-        // 1. Filter by Language
+        // Filter by Language
         const langVoices = availableVoices.filter(v => v.lang === lang || v.lang.replace('_', '-') === lang);
-        
-        // Fallback: if exact dialect not found, try base language (e.g., en-US falls back to en)
         const candidates = langVoices.length > 0 ? langVoices : availableVoices.filter(v => v.lang.startsWith(lang.split('-')[0]));
-        if (candidates.length === 0) return availableVoices[0]; // Absolute fallback
+        
+        if (candidates.length === 0) return availableVoices[0];
 
-        // 2. Filter by Gender (Heuristic based on name)
+        // Filter by Gender
         const maleRegex = /male|david|daniel|mark|george|james|uk english male/i;
         const femaleRegex = /female|samantha|zira|victoria|susan|google us english|uk english female/i;
 
@@ -73,7 +71,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, setMessages, on
             return genderPreference === 'male' ? maleRegex.test(name) : femaleRegex.test(name);
         });
 
-        // 3. Priority Preference (Google voices are usually higher quality)
+        // Prefer Google Voices
         const googleVoice = candidates.find(v => v.name.includes('Google'));
 
         return genderMatch || googleVoice || candidates[0];
@@ -81,92 +79,46 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, setMessages, on
 
     const playMessageAudio = (id: string, text: string) => {
         if ('speechSynthesis' in window) {
-            // Cancel any ongoing speech
             window.speechSynthesis.cancel();
             
             const utterance = new SpeechSynthesisUtterance(text);
             
-            // Default Settings
+            // Determine Settings based on Accent and Voice ID
             let lang: 'en-US' | 'en-GB' = settings?.accent === 'UK' ? 'en-GB' : 'en-US';
             let pitch = 1;
             let rate = settings?.speed || 1;
             let gender: 'male' | 'female' = 'female';
 
-            // Voice customization based on ID
-            // NOTE: We use Pitch and Rate + Gender Selection to simulate the selected "Timbre".
+            // Simulate "Timbre" using Pitch/Rate adjustments
             switch (settings?.voiceId) {
-                // US Voices
-                case 'zhilin': // Sweet Female (Simulated with higher pitch)
-                    pitch = 1.4; 
-                    gender = 'female';
-                    break;
-                case 'gentle': // Soft Female (Slightly slower, soft pitch)
-                    pitch = 1.1;
-                    rate = rate * 0.95;
-                    gender = 'female';
-                    break;
-                case 'taiwan': // Cute Female (High pitch)
-                    pitch = 1.6;
-                    rate = rate * 1.05;
-                    gender = 'female';
-                    break;
-                case 'sister': // Mature Female (Lower female pitch)
-                    pitch = 0.9;
-                    gender = 'female';
-                    break;
-                case 'shota': // Young Male (High male pitch)
-                    pitch = 1.4;
-                    gender = 'male';
-                    break;
-                case 'handsome': // Young Male (Standard male)
-                    pitch = 1.0;
-                    gender = 'male';
-                    break;
-                case 'magnetic': // Deep Male (Very low pitch)
-                    pitch = 0.6; 
-                    gender = 'male';
-                    break;
-                case 'us_standard':
-                    pitch = 1.0;
-                    gender = 'female';
-                    break;
-
-                // UK Voices (Fallback if IDs are somehow used, though UI hides them)
-                case 'uk_elegant': 
-                    pitch = 1.1; gender = 'female'; break;
-                case 'uk_gentleman': 
-                    pitch = 0.7; gender = 'male'; break;
-                case 'uk_royal': 
-                    pitch = 1.3; gender = 'female'; break;
-                case 'uk_boy': 
+                case 'zhilin': // Sweet Female
+                    pitch = 1.4; gender = 'female'; break;
+                case 'gentle': // Soft Female
+                    pitch = 1.1; rate *= 0.95; gender = 'female'; break;
+                case 'taiwan': // Cute Female
+                    pitch = 1.6; rate *= 1.05; gender = 'female'; break;
+                case 'sister': // Mature Female
+                    pitch = 0.9; gender = 'female'; break;
+                case 'shota': // Young Male
                     pitch = 1.4; gender = 'male'; break;
-                
-                default:
-                    gender = 'female';
-                    break;
+                case 'handsome': // Standard Male
+                    pitch = 1.0; gender = 'male'; break;
+                case 'magnetic': // Deep Male
+                    pitch = 0.6; gender = 'male'; break;
+                default: // Standard
+                    pitch = 1.0; gender = 'female'; break;
             }
 
-            // Apply configuration
             utterance.lang = lang;
             const bestVoice = getBestVoice(lang, gender);
-            if (bestVoice) {
-                utterance.voice = bestVoice;
-            }
+            if (bestVoice) utterance.voice = bestVoice;
             
             utterance.pitch = pitch;
             utterance.rate = rate;
 
-            utterance.onstart = () => {
-                setPlayingId(id);
-            };
-
-            utterance.onend = () => {
-                setPlayingId(null);
-            };
-
-            utterance.onerror = () => {
-                setPlayingId(null);
-            };
+            utterance.onstart = () => setPlayingId(id);
+            utterance.onend = () => setPlayingId(null);
+            utterance.onerror = () => setPlayingId(null);
 
             window.speechSynthesis.speak(utterance);
         }
@@ -187,22 +139,21 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, setMessages, on
         setPlayingId(null);
     };
 
-    // --- Interaction Logic ---
+    // --- Actions ---
 
     const handleSend = async (text: string) => {
-        setHint(null); // Clear hint on new message
+        setHint(null);
         const newMessage: Message = {
             id: Date.now().toString(),
             sender: Sender.USER,
             text: text,
-            scores: { pronunciation: Math.floor(Math.random() * 20) + 80, grammar: Math.floor(Math.random() * 20) + 80 }, // Simulated score
-            feedback: { pronunciation: "Pronunciation is good.", grammar: "Grammar is accurate." }
+            scores: { pronunciation: Math.floor(Math.random() * 20) + 80, grammar: Math.floor(Math.random() * 20) + 80 },
+            feedback: { pronunciation: "Pronunciation is clear and natural.", grammar: "Good sentence structure and vocabulary." }
         };
         
         const newHistory = [...messages, newMessage];
         setMessages(newHistory);
 
-        // Simulate AI Thinking
         const aiText = await generateAIResponse(newHistory.map(m => m.text), text);
         const aiMsgId = (Date.now() + 1).toString();
         
@@ -210,16 +161,15 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, setMessages, on
              id: aiMsgId,
              sender: Sender.AI,
              text: aiText,
-             isBlurred: isBlindMode, // Apply Blind Mode state
+             isBlurred: isBlindMode, // Check Blind Mode
              showTranslation: false
         }]);
 
-        // AUTO PLAY AI RESPONSE
+        // Auto Play
         playMessageAudio(aiMsgId, aiText);
     };
 
     const handleHint = async () => {
-        // Toggle Logic: If hint exists, clear it.
         if (hint) {
             setHint(null);
             return;
@@ -235,7 +185,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, setMessages, on
 
     const handleChangeTopic = async () => {
         setHint(null);
-        handleMute(); // Stop any current audio
+        handleMute();
         const difficulty = settings?.difficulty || 'Intermediate';
         const topicText = await getNewTopicStart(difficulty);
         
@@ -244,11 +194,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, setMessages, on
             id: newMsgId,
             sender: Sender.AI,
             text: topicText,
-            isBlurred: isBlindMode, // Apply Blind Mode state
+            isBlurred: isBlindMode,
             showTranslation: false
         }]);
 
-        // AUTO PLAY NEW TOPIC
+        // Auto Play
         playMessageAudio(newMsgId, topicText);
     };
 
@@ -280,12 +230,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, setMessages, on
         ));
     };
 
-    // Global Blind Mode Toggle
     const toggleBlindMode = () => {
         const newMode = !isBlindMode;
         setIsBlindMode(newMode);
-        
-        // Apply to all existing AI messages
+        // Apply global state to AI messages
         setMessages(prev => prev.map(msg => 
             msg.sender === Sender.AI ? { ...msg, isBlurred: newMode } : msg
         ));
@@ -321,7 +269,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, setMessages, on
                 
                 {messages.map((msg) => (
                     <div key={msg.id} className={`flex w-full mb-6 ${msg.sender === Sender.USER ? 'justify-end' : 'justify-start'}`}>
-                        {/* Avatar */}
                         {msg.sender === Sender.AI && (
                             <div className="w-10 h-10 rounded-full bg-yellow-100 overflow-hidden mr-3 border border-gray-100 shadow-sm flex-shrink-0">
                                 <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="AI" className="w-full h-full object-cover" />
@@ -337,24 +284,22 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, setMessages, on
                                     ${msg.isBlurred ? 'filter blur-[4px] select-none' : ''}
                                 `}
                             >
-                                {/* Audio Play Button with Spectrum Animation */}
+                                {/* Audio Button */}
                                 <button 
                                     onClick={(e) => handlePlayClick(msg.id, msg.text, e)}
                                     className="absolute top-4 right-4 p-2 -mr-3 -mt-3 rounded-full hover:bg-gray-100 transition-colors z-10 group flex items-center justify-center w-10 h-10"
-                                    aria-label={playingId === msg.id ? "Stop Audio" : "Play Audio"}
                                 >
                                     <div className="flex items-center gap-[2px] h-4">
                                         <div className={`w-[3px] rounded-full transition-all duration-300 ${msg.sender === Sender.AI ? 'bg-orange-500' : 'bg-blue-500'} ${playingId === msg.id ? 'animate-wave' : 'h-2'}`} style={{ animationDelay: '0s' }}></div>
                                         <div className={`w-[3px] rounded-full transition-all duration-300 ${msg.sender === Sender.AI ? 'bg-orange-500' : 'bg-blue-500'} ${playingId === msg.id ? 'animate-wave' : 'h-3'}`} style={{ animationDelay: '0.2s' }}></div>
                                         <div className={`w-[3px] rounded-full transition-all duration-300 ${msg.sender === Sender.AI ? 'bg-orange-500' : 'bg-blue-500'} ${playingId === msg.id ? 'animate-wave' : 'h-4'}`} style={{ animationDelay: '0.4s' }}></div>
-                                        <div className={`w-[3px] rounded-full transition-all duration-300 ${msg.sender === Sender.AI ? 'bg-orange-500' : 'bg-blue-500'} ${playingId === msg.id ? 'animate-wave' : 'h-2'}`} style={{ animationDelay: '0.1s' }}></div>
                                     </div>
                                 </button>
                                 
                                 <p className="text-gray-900 font-medium pr-8">{msg.text}</p>
                             </div>
 
-                            {/* User Scores */}
+                            {/* User Score Area - Clickable */}
                             {msg.sender === Sender.USER && msg.scores && (
                                 <div 
                                     onClick={() => onMessageClick(msg)}
@@ -373,27 +318,17 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, setMessages, on
                                         <button 
                                             onClick={() => toggleTranslation(msg.id, msg.text)}
                                             className={`transition-colors ${msg.showTranslation ? 'text-orange-500' : 'hover:text-orange-400'}`}
-                                            disabled={isTranslating === msg.id}
                                         >
                                             <IconTrans className={`w-4 h-4 ${isTranslating === msg.id ? 'animate-pulse' : ''}`} />
                                         </button>
-                                        
-                                        <button 
-                                            onClick={() => toggleBlur(msg.id)}
-                                            className={`transition-colors ${msg.isBlurred ? 'text-orange-500' : 'hover:text-orange-400'}`}
-                                        >
+                                        <button onClick={() => toggleBlur(msg.id)} className={`transition-colors ${msg.isBlurred ? 'text-orange-500' : 'hover:text-orange-400'}`}>
                                             {msg.isBlurred ? <IconEyeOff className="w-4 h-4" /> : <IconEye className="w-4 h-4" />}
                                         </button>
-
-                                        <button 
-                                            onClick={() => toggleFavorite(msg.id)}
-                                            className={`transition-colors ${msg.isFavorited ? 'text-yellow-400' : 'hover:text-yellow-400'}`}
-                                        >
+                                        <button onClick={() => toggleFavorite(msg.id)} className={`transition-colors ${msg.isFavorited ? 'text-yellow-400' : 'hover:text-yellow-400'}`}>
                                             <IconStar className={`w-4 h-4 ${msg.isFavorited ? 'fill-current' : ''}`} />
                                         </button>
                                     </div>
                                     
-                                    {/* Translation Text */}
                                     {msg.showTranslation && !msg.isBlurred && (
                                         <div className="w-full text-sm text-gray-500 mt-2 pl-2 border-l-2 border-orange-200 animate-fade-in">
                                             {msg.translation || (isTranslating === msg.id ? "正在翻译..." : "")}
@@ -403,7 +338,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, setMessages, on
                             )}
                         </div>
 
-                        {/* User Avatar */}
                         {msg.sender === Sender.USER && (
                             <div className="w-10 h-10 rounded-full bg-blue-100 overflow-hidden ml-3 border border-gray-100 shadow-sm flex-shrink-0">
                                  <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Sorell" alt="User" className="w-full h-full object-cover" />
@@ -412,7 +346,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, setMessages, on
                     </div>
                 ))}
 
-                 {/* Dynamic Hint Box with Audio */}
+                 {/* Hint Box */}
                 {hint && (
                     <div className="bg-white p-4 rounded-xl shadow-sm mb-4 border-l-4 border-orange-400 animate-fade-in relative">
                         <div className="flex justify-between items-start">
@@ -453,9 +387,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, setMessages, on
                     </button>
                 </div>
 
-                {/* Big Mic Button / Debug Input */}
+                {/* Input Area */}
                 <div className="relative">
-                    {/* For web demo purpose, allow text input if mic fails */}
                     <div className="absolute -top-12 left-0 w-full flex justify-center opacity-0 hover:opacity-100 transition-opacity pointer-events-none hover:pointer-events-auto z-10">
                          <input 
                             type="text" 

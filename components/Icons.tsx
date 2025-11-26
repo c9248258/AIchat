@@ -12,7 +12,9 @@ import {
   EyeOff,
   Star,
   X,
-  ChevronRight
+  ChevronRight,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 
 export const IconMic = ({ className }: { className?: string }) => <Mic className={className} />;
@@ -28,3 +30,5 @@ export const IconEyeOff = ({ className }: { className?: string }) => <EyeOff cla
 export const IconStar = ({ className }: { className?: string }) => <Star className={className} />;
 export const IconClose = ({ className }: { className?: string }) => <X className={className} />;
 export const IconArrowRight = ({ className }: { className?: string }) => <ChevronRight className={className} />;
+export const IconChevronDown = ({ className }: { className?: string }) => <ChevronDown className={className} />;
+export const IconChevronUp = ({ className }: { className?: string }) => <ChevronUp className={className} />;

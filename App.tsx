@@ -32,6 +32,7 @@ const App: React.FC = () => {
                 setMessages={setMessages}
                 onOpenSettings={() => setIsSettingsOpen(true)}
                 onMessageClick={setSelectedMessage}
+                settings={settings}
             />
 
             {/* Overlays */}
