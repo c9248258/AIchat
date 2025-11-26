@@ -1,0 +1,7 @@
+{
+  "name": "Language Partner AI",
+  "description": "A spoken English language learning companion with real-time AI feedback.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
